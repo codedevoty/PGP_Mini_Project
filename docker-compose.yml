@@ -1,0 +1,33 @@
+version: '3.8'
+
+services:
+  backend:
+    build: ./backend
+    container_name: smartqr-backend
+    ports:
+      - "8080:8080"
+    environment:
+      - SPRING_PROFILES_ACTIVE=prod
+      - MONGODB_URI=mongodb+srv://<username>:<password>@cluster0.xxxxx.mongodb.net/smart_qr_restaurant?retryWrites=true&w=majority
+      - MAIL_USERNAME=your-email@gmail.com
+      - MAIL_PASSWORD=your-app-password
+      - JWT_SECRET=SmartQRRestaurantSuperSecretKeyForJWTTokenGeneration2024VeryLongAndSecure
+      - FRONTEND_URL=http://localhost
+    restart: unless-stopped
+    networks:
+      - smartqr-network
+
+  frontend:
+    build: ./frontend
+    container_name: smartqr-frontend
+    ports:
+      - "80:80"
+    depends_on:
+      - backend
+    restart: unless-stopped
+    networks:
+      - smartqr-network
+
+networks:
+  smartqr-network:
+    driver: bridge

@@ -1,0 +1,32 @@
+server:
+  port: 8080
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://stsahilvarma04_db_user:82vdtB9DSPb2gLVD@cluster0.xufvgz0.mongodb.net/smart_qr_restaurant?retryWrites=true&w=majority&appName=Cluster0
+      database: smart_qr_restaurant
+
+  mail:
+    host: smtp.gmail.com
+    port: 587
+    username: s.tsahilvarma04@gmail.com
+    password: Sahil@2005OK
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true
+
+
+app:
+  jwt:
+    secret: SmartQRRestaurantSuperSecretKeyForJWTTokenGeneration2024VeryLongAndSecure
+    expiration-ms: 86400000
+  frontend-url: http://localhost:5173
+
+logging:
+  level:
+    root: INFO
+    net.engineeringdigest.journalApp: DEBUG
