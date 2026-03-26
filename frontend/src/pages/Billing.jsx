@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { CreditCard, Banknote, Smartphone, CheckCircle, Receipt } from 'lucide-react';
 import toast from 'react-hot-toast';
-import { sessionAPI, orderAPI } from '../services/api';
+import { sessionAPI, orderAPI, paymentAPI } from '../services/api';
 
 export default function Billing() {
   const { sessionId } = useParams();
@@ -10,7 +10,7 @@ export default function Billing() {
   const [session, setSession] = useState(null);
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [paymentMethod, setPaymentMethod] = useState('UPI');
+  const [paymentMethod, setPaymentMethod] = useState('ONLINE');
   const [paying, setPaying] = useState(false);
   const [paid, setPaid] = useState(false);
 
@@ -31,13 +31,57 @@ export default function Billing() {
   };
 
   const handlePay = async () => {
+    if (paymentMethod === 'CASH') {
+      setPaying(true);
+      try {
+        await sessionAPI.pay(sessionId, 'CASH');
+        setPaid(true);
+        toast.success('Confirmed! Please pay at the counter.');
+      } catch (err) { toast.error('Failed to confirm'); }
+      setPaying(false);
+      return;
+    }
+
+    // Online Payment via Razorpay
     setPaying(true);
     try {
-      await sessionAPI.pay(sessionId, paymentMethod);
-      setPaid(true);
-      toast.success('Payment successful! Thank you! 🎉');
+      // 1. Create order on backend
+      const res = await paymentAPI.createOrder({ amount: Math.round(total) });
+      const { orderId, amount: rzpAmount, currency, keyId } = res.data.data;
+
+      // 2. Configure Razorpay options
+      const options = {
+        key: keyId,
+        amount: rzpAmount,
+        currency: currency,
+        name: 'Smart QR Restaurant',
+        description: `Order Bill - Table ${session?.tableNumber}`,
+        order_id: orderId,
+        handler: async function (response) {
+            try {
+               await sessionAPI.pay(sessionId, 'ONLINE');
+               setPaid(true);
+               toast.success('Payment successful! 🎉');
+            } catch (e) {
+               toast.error('Payment verification failed on server');
+            }
+        },
+        prefill: {
+            name: "Customer",
+        },
+        theme: {
+            color: "#f59e0b" // Match premium amber branding
+        }
+      };
+      
+      const rzp = new window.Razorpay(options);
+      rzp.on('payment.failed', function (response){
+         toast.error(response.error.description || 'Payment Failed');
+      });
+      rzp.open();
+
     } catch (err) {
-      toast.error('Payment failed');
+      toast.error('Failed to initialize Razorpay Gateway');
     }
     setPaying(false);
   };
@@ -48,9 +92,8 @@ export default function Billing() {
   const total = subtotal + tax;
 
   const paymentMethods = [
-    { id: 'UPI', icon: Smartphone, label: 'UPI', desc: 'Google Pay, PhonePe, Paytm' },
-    { id: 'CARD', icon: CreditCard, label: 'Card', desc: 'Debit / Credit Card' },
-    { id: 'CASH', icon: Banknote, label: 'Cash', desc: 'Pay at counter' },
+    { id: 'ONLINE', icon: CreditCard, label: 'Pay Online', desc: 'Cards, UPI, Netbanking (Razorpay)' },
+    { id: 'CASH', icon: Banknote, label: 'Pay Cash', desc: 'Pay at the counter' },
   ];
 
   if (loading) {

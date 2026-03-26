@@ -90,4 +90,9 @@ export const sessionAPI = {
   getAll: (restaurantId) => api.get(`/owner/sessions/${restaurantId}/all`),
 };
 
+// ============ PAYMENT ============
+export const paymentAPI = {
+  createOrder: (data) => api.post('/payment/create-order', data),
+};
+
 export default api;
