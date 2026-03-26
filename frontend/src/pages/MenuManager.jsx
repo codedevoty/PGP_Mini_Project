@@ -85,7 +85,7 @@ export default function MenuManager() {
     e.preventDefault();
     if (!dishForm.name || !dishForm.price) return toast.error('Name and price required');
     try {
-      await menuAPI.createDish({ ...dishForm, price: parseFloat(dishForm.price), categoryId: catId, restaurantId });
+      await menuAPI.createDish({ ...dishForm, price: parseFloat(dishForm.price), categoryId: typeof catId === 'object' ? catId._id : catId, restaurantId }); // Changed_Code
       toast.success('Dish added!');
       resetDishForm();
       setShowDishForm(null);
