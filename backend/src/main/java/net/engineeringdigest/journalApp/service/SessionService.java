@@ -31,6 +31,21 @@ public class SessionService {
 
     @Transactional
     public Session startSession(String tableId, int tableNumber, String restaurantId) {
+        // Safely resolve true Table ID
+        TableInfo tableInfo = null;
+        try {
+            if (tableId != null && tableId.length() == 24) {
+                tableInfo = tableInfoRepository.findById(new ObjectId(tableId)).orElse(null);
+            }
+        } catch (Exception e) {}
+
+        if (tableInfo == null) {
+            tableInfo = tableInfoRepository.findByRestaurantIdAndTableNumber(restaurantId, tableNumber);
+            if (tableInfo != null) {
+                tableId = tableInfo.getId().toHexString();
+            }
+        }
+
         // Check if there's already an active session for this table
         Session existing = sessionRepository.findByTableIdAndStatus(tableId, "ACTIVE");
         if (existing != null) {
@@ -44,15 +59,15 @@ public class SessionService {
         session.setRestaurantId(restaurantId);
         session.setStatus("ACTIVE");
         session.setStartTime(LocalDateTime.now());
+        session.setTotalAmount(0.0);
+        session.setPaid(false);
 
         Session saved = sessionRepository.save(session);
 
         // Mark table as occupied
-        Optional<TableInfo> table = tableInfoRepository.findById(new ObjectId(tableId));
-        if (table.isPresent()) {
-            TableInfo tableInfo = table.get();
+        if (tableInfo != null) {
             tableInfo.setOccupied(true);
-            tableInfo.setActiveSessionId(saved.getId().toHexString());
+            tableInfo.setActiveSessionId(saved.getId());
             tableInfoRepository.save(tableInfo);
         }
 

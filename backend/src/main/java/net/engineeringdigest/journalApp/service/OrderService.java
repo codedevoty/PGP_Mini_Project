@@ -33,8 +33,33 @@ public class OrderService {
     @Transactional
     public Order placeOrder(OrderRequest request) {
         try {
+            // 1. Resolve or Auto-Create Session natively
+            Session session = null;
+            if (request.getSessionId() != null && !request.getSessionId().isEmpty()) {
+                session = sessionRepository.findById(new ObjectId(request.getSessionId())).orElse(null);
+            }
+
+            if (session == null) {
+                String actualTableId = request.getTableId();
+                session = sessionRepository.findByTableIdAndStatus(actualTableId, "ACTIVE");
+                
+                if (session == null) {
+                    session = new Session();
+                    session.setTableId(actualTableId);
+                    session.setTableNumber(request.getTableNumber());
+                    session.setRestaurantId(request.getRestaurantId());
+                    session.setStatus("ACTIVE");
+                    session.setStartTime(LocalDateTime.now());
+                    session.setTotalAmount(0.0);
+                    session.setPaid(false);
+                    session = sessionRepository.save(session);
+                    log.info("Successfully Auto-Generated new Session {} for Table {}", session.getId(), request.getTableNumber());
+                }
+            }
+
+            // 2. Attach Order to Session permanently
             Order order = new Order();
-            order.setSessionId(request.getSessionId());
+            order.setSessionId(session.getId());
             order.setTableId(request.getTableId());
             order.setTableNumber(request.getTableNumber());
             order.setRestaurantId(request.getRestaurantId());
@@ -52,15 +77,10 @@ public class OrderService {
 
             Order saved = orderRepository.save(order);
 
-            // Update session with order
-            if (request.getSessionId() != null && !request.getSessionId().isEmpty()) {
-                Session session = sessionRepository.findById(new ObjectId(request.getSessionId())).orElse(null);
-                if (session != null) {
-                    session.getOrderIds().add(saved.getId().toHexString());
-                    session.setTotalAmount(session.getTotalAmount() + total);
-                    sessionRepository.save(session);
-                }
-            }
+            // Update session total
+            session.getOrderIds().add(saved.getId().toHexString());
+            session.setTotalAmount(session.getTotalAmount() + total);
+            sessionRepository.save(session);
 
             // Push real-time notification to owner dashboard via WebSocket
             try {
