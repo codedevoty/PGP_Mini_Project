@@ -53,7 +53,7 @@ public class OrderService {
             Order saved = orderRepository.save(order);
 
             // Update session with order
-            if (request.getSessionId() != null) {
+            if (request.getSessionId() != null && !request.getSessionId().isEmpty()) {
                 Session session = sessionRepository.findById(new ObjectId(request.getSessionId())).orElse(null);
                 if (session != null) {
                     session.getOrderIds().add(saved.getId().toHexString());
