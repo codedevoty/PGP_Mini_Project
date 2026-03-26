@@ -24,7 +24,7 @@ app:
   jwt:
     secret: SmartQRRestaurantSuperSecretKeyForJWTTokenGeneration2024VeryLongAndSecure
     expiration-ms: 86400000
-  frontend-url: https://nasty-turtles-wear.loca.lt
+  frontend-url: http://192.168.1.35:8081
   razorpay:
     key-id: rzp_test_placeholder_key_replace_me
     key-secret: placeholder_secret_replace_me
