@@ -94,7 +94,7 @@ export default function CustomerMenu() {
       const tableId = tableNumber.toString();
       const sessionId = session ? (session.id || session._id) : '';
 
-      await orderAPI.place({
+      const res = await orderAPI.place({
         tableId,
         tableNumber: parseInt(tableNumber),
         restaurantId,
@@ -106,6 +106,12 @@ export default function CustomerMenu() {
       setCart([]);
       setShowCart(false);
       setSpecialInstructions('');
+
+      // Instantly pop the user into the Razorpay billing flow!
+      const finalSessionId = res.data.data.sessionId || sessionId;
+      if (finalSessionId) {
+        navigate(`/billing/${finalSessionId}`);
+      }
     } catch (err) {
       toast.error('Failed to place order');
     }
