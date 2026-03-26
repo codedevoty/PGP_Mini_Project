@@ -24,7 +24,7 @@ app:
   jwt:
     secret: SmartQRRestaurantSuperSecretKeyForJWTTokenGeneration2024VeryLongAndSecure
     expiration-ms: 86400000
-  frontend-url: http://192.168.1.35:5173
+  frontend-url: http://192.168.1.35:8081
 
 logging:
   level:
