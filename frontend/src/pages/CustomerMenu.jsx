@@ -35,14 +35,9 @@ export default function CustomerMenu() {
 
   const startSession = async () => {
     try {
-      const tablesRes = await tableAPI.getAll(restaurantId);
-      const tables = tablesRes.data.data || [];
-      const table = tables.find(t => t.tableNumber === parseInt(tableNumber));
-      if (table) {
-        const tableId = table.id || table._id;
-        const res = await sessionAPI.start({ tableId, tableNumber: parseInt(tableNumber), restaurantId });
-        setSession(res.data.data);
-      }
+      // Create session using table number instead of requiring an owner API call to get the DB Table ID
+      const res = await sessionAPI.start({ tableId: tableNumber.toString(), tableNumber: parseInt(tableNumber), restaurantId });
+      setSession(res.data.data);
     } catch (err) { /* Session will be created on first order */ }
   };
 
@@ -96,10 +91,7 @@ export default function CustomerMenu() {
     if (cart.length === 0) return toast.error('Cart is empty');
     setPlacing(true);
     try {
-      const tablesRes = await tableAPI.getAll(restaurantId);
-      const tables = tablesRes.data.data || [];
-      const table = tables.find(t => t.tableNumber === parseInt(tableNumber));
-      const tableId = table ? (table.id || table._id) : '';
+      const tableId = tableNumber.toString();
       const sessionId = session ? (session.id || session._id) : '';
 
       await orderAPI.place({
